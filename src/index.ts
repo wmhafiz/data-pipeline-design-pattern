@@ -1,5 +1,5 @@
-import { Queue } from "bull";
-import { ReaderOpts, CommandsOpts, JobCompleteHook } from "./etl";
+import { Queue } from 'bull';
+import { ReaderOpts, CommandsOpts, JobCompleteHook } from './worker';
 
 interface EtlOptions {
   /**
@@ -79,31 +79,31 @@ interface Trade {
 const tradeRecords: Trade[] = [
   {
     id: 1,
-    name: "Telekom Malaysia Berhad",
-    brn: "TM123",
-    telNo: "0139485675",
-    faxNo: "03223456",
-    coord: "103.1, 3.13",
-    address: "Bangsar"
+    name: 'Telekom Malaysia Berhad',
+    brn: 'TM123',
+    telNo: '0139485675',
+    faxNo: '03223456',
+    coord: '103.1, 3.13',
+    address: 'Bangsar',
   },
   {
     id: 2,
-    name: "Celcom Sdn Berhad",
-    brn: "TM123",
-    telNo: "0139485675",
-    faxNo: "03223456",
-    coord: "103.1, 3.13",
-    address: "KL"
+    name: 'Celcom Sdn Berhad',
+    brn: 'TM123',
+    telNo: '0139485675',
+    faxNo: '03223456',
+    coord: '103.1, 3.13',
+    address: 'KL',
   },
   {
     id: 3,
-    name: "Maxis Sdn Berhad",
-    brn: "TM123",
-    telNo: "0139485675",
-    faxNo: "03223456",
-    coord: "103.1, 3.13",
-    address: "Damansara"
-  }
+    name: 'Maxis Sdn Berhad',
+    brn: 'TM123',
+    telNo: '0139485675',
+    faxNo: '03223456',
+    coord: '103.1, 3.13',
+    address: 'Damansara',
+  },
 ];
 
 interface Msbr {
