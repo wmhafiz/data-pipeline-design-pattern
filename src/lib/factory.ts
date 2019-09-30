@@ -1,6 +1,6 @@
-import { Reader } from "./reader";
-import { Command } from "./command";
-import { Queue } from "./queue";
+import { Reader } from './reader';
+import { Command } from './command';
+import { Queue } from './queue';
 
 export interface ReaderOpts {
   type: string;
@@ -9,32 +9,36 @@ export interface ReaderOpts {
 
 export class ReaderFactory {
   static createReader(opts: ReaderOpts): Reader {
-    throw new Error("Not implemented");
+    throw new Error('Not implemented');
   }
 }
 
-export interface CommandsOpts {
-  commands: Array<CommandOpts>;
-}
-
 export interface CommandOpts {
-  name: string;
+  title: string;
+  cmd: string;
   opts: any;
 }
 
 export class CommandsFactory<T> {
-  static createCommands(opts: CommandsOpts): Array<Command<T>> {
-    throw new Error("Not Implemented");
+  static createCommands(opts: Array<CommandOpts>): Array<Command<T>> {
+    throw new Error('Not Implemented');
   }
 }
 
-export interface HooksOpts {
-  hooks: Array<CommandOpts>;
+export class HooksFactory<T> {
+  static createHooks(opts: Array<CommandOpts>): Array<Command<T>> {
+    throw new Error('Not Implemented');
+  }
 }
 
-export class HooksFactory<T> {
-  static createHooks(opts: HooksOpts): Array<Command<T>> {
-    throw new Error("Not Implemented");
+interface QueueOpts {
+  type: string;
+  opts: EtlOpts | any;
+}
+
+export class QueueFactory<T> {
+  static createQueue(name: string, opts: QueueOpts): Queue<T> {
+    throw new Error('Not Implemented');
   }
 }
 
@@ -91,25 +95,13 @@ export interface Backoff {
   delay: number;
 }
 
-interface QueueOpts {
-  type: string;
-  opts: any;
-}
-
 export interface EtlConfiguration {
   id: number;
   title: string;
   description: string;
   queueOpts: QueueOpts;
-  opts: EtlOpts;
-  input: ReaderOpts;
-  output: CommandsOpts;
-  processing: CommandsOpts;
-  jobComplete: HooksOpts;
-}
-
-export class QueueFactory<T> {
-  static createQueue(name: string, opts: QueueOpts): Queue<T> {
-    throw new Error("Not Implemented");
-  }
+  readerOpts: ReaderOpts;
+  processorOpts: Array<CommandOpts>;
+  writerOpts: Array<CommandOpts>;
+  jobCompleteOpts: Array<CommandOpts>;
 }

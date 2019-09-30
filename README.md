@@ -1,5 +1,13 @@
 # Data Pipeline Design Patterns
 
+Consist of the following core components:
+
+- Reader
+- Command
+- Queue
+- Worker
+- Etl
+
 ## Reader
 
 Reader is used by Dispatcher worker to get Raw data into the queue.
@@ -48,19 +56,227 @@ Concrete classes include: `BullQueue` & `RabbitMqQueue`. Since BullQueue has adv
 
 ![Worker class diagram](images/worker-class-diagram.svg)
 
-There are 4 type of workers:
+There are 4 type of workers, all have execute methods and publish/subs to different queue, as follows:
 
-- Dispatcher: read data from a data source and publish it into Raw Queue
-- Processor: subscribe to Raw Queue and perform data transformation & publish it to Output Queue
-- Writer: subscribe to Output Queue and load it to various data sources
-- JobComplete: subscribe to Job Complete Queue and perform custom business logics
+### Dispatcher
 
-![Worker snippets](images/worker-snippet.png)
+Read data from a data source and publish it into Raw Queue.
 
-Example hooks:
+Dispatcher receive a ReaderOpts.
 
-- Generate Control Figure & Data Quality reports
-- Sending email notifications
+``` typescript
+export interface ReaderOpts {
+  type: string;
+  opts: any;
+}
+```
+
+### Processor, Writer & Job Complete
+
+- Processor: Subscribe to Raw Queue and perform data transformation & publish it to Output Queue
+- Writer: Subscribe to Output Queue and load it to various data sources
+- JobComplete: Subscribe to Job Complete Queue and perform custom business logics. Example hooks such as Generate Control Figure & Data Quality reports & Sending email notifications
+
+Processor, Writer & Job Complete all receive a list of CommandOpts
+
+``` typescript
+export interface CommandOpts {
+  title: string;
+  cmd: string;
+  opts: any;
+}
+```
+
+Worker Snippets:
+
+``` typescript
+import { Queue } from './queue';
+import {
+  ReaderOpts,
+  ReaderFactory,
+  CommandOpts,
+  CommandsFactory,
+  HooksFactory,
+} from './factory';
+
+export class Dispatcher<T> {
+  protected readerOpts: ReaderOpts;
+  protected inputQueue: Queue<T>;
+  protected rawQueue: Queue<T>;
+
+  constructor(
+    readerOpts: ReaderOpts,
+    inputQueue: Queue<T>,
+    rawQueue: Queue<T>
+  ) {
+    this.readerOpts = readerOpts;
+    this.inputQueue = inputQueue;
+    this.rawQueue = rawQueue;
+  }
+
+  execute(): void {
+    this.inputQueue.on('data', readerOpts => {
+      const reader = ReaderFactory.createReader(readerOpts);
+      const readStream = reader.read();
+      readStream.on('data', data => {
+        this.rawQueue.add(data);
+      });
+    });
+  }
+}
+
+export class Processor<T> {
+  protected inputQueue: Queue<T>;
+  protected outputQueue: Queue<T>;
+  protected commandsOptions: Array<CommandOpts>;
+
+  constructor(
+    commandsOptions: Array<CommandOpts>,
+    inputQueue: Queue<T>,
+    outputQueue: Queue<T>
+  ) {
+    this.commandsOptions = commandsOptions;
+    this.inputQueue = inputQueue;
+    this.outputQueue = outputQueue;
+  }
+
+  execute(): void {
+    const commands = CommandsFactory.createCommands(this.commandsOptions);
+    this.inputQueue.on('data', data => {
+      let output = data;
+      commands.forEach(command => {
+        const result = command.execute(data);
+        output = {
+          ...output,
+          ...result,
+        };
+      });
+      this.outputQueue.add(output);
+    });
+  }
+}
+
+export class Writer<T> {
+  protected outputQueue: Queue<T>;
+  protected commandsOptions: Array<CommandOpts>;
+
+  constructor(commandsOptions: Array<CommandOpts>, outputQueue: Queue<T>) {
+    this.commandsOptions = commandsOptions;
+    this.outputQueue = outputQueue;
+  }
+
+  execute(): void {
+    const commands = CommandsFactory.createCommands(this.commandsOptions);
+    this.outputQueue.on('data', (data: T) => {
+      let output = data;
+      commands.forEach(async command => {
+        const result = await command.execute(data);
+        output = {
+          ...data,
+          ...result,
+        };
+      });
+      this.outputQueue.add(output);
+    });
+  }
+}
+
+export class JobComplete<T> {
+  protected jobCompleteQueue: Queue<T>;
+  protected hooksOpts: Array<CommandOpts>;
+
+  constructor(hooksOpts: Array<CommandOpts>, jobCompleteQueue: Queue<T>) {
+    this.hooksOpts = hooksOpts;
+    this.jobCompleteQueue = jobCompleteQueue;
+  }
+
+  execute(): void {
+    this.jobCompleteQueue.on('data', data => {
+      const hooks = HooksFactory.createHooks(this.hooksOpts);
+      hooks.forEach(hook => {
+        hook.execute(data);
+      });
+    });
+  }
+}
+
+```
+
+## ETL
+
+### Configuration
+
+A big config object that consists of the following options:
+
+![EtlConfig](images/factory-opts-class-diagram.svg)
+
+- Title & Description: The title of the etl job & its desc
+- QueueOpts: message broker technology to be used (eg: `Bull` or `RabbitMQ`) & its options
+- ReaderOpts: the data source (eg: `mySQL`, `file` etc) & its options
+- Commands:
+  - Processor: Data transformation or enrichment to be executed
+  - Writer: Where to load the output data
+  - Job Complete: Custom logics or hooks to be run once job is completed
+
+### Factory
+
+Factory are responsible to create the correct concrete class based on the ETL configurations:
+
+- ReaderFactory
+- CommandsFactory
+- HooksFactory
+- QueueFactory
+
+### The class
+
+ETL class tie all the interfaces together and spawn the correct worker type based on the environment variables.
+
+![ETL Class Diagram](images/etl-class-diagram.svg)
+
+``` typescript
+import { EtlConfiguration, QueueFactory } from './factory';
+import { Dispatcher, Processor, Writer, JobComplete } from './worker';
+
+export class Etl<T> {
+  protected dispatcher: Dispatcher<T>;
+  protected processor: Processor<T>;
+  protected writer: Writer<T>;
+  protected jobComplete: JobComplete<T>;
+
+  constructor(etlConfig: EtlConfiguration) {
+    const inputQueue = QueueFactory.createQueue('input', etlConfig.queueOpts);
+    const rawQueue = QueueFactory.createQueue('raw', etlConfig.queueOpts);
+    const outputQueue = QueueFactory.createQueue('output', etlConfig.queueOpts);
+    const jobCompleteQueue = QueueFactory.createQueue(
+      'complete',
+      etlConfig.queueOpts
+    );
+
+    this.dispatcher = new Dispatcher(
+      etlConfig.readerOpts,
+      inputQueue,
+      rawQueue
+    );
+    this.processor = new Processor(
+      etlConfig.processorOpts,
+      inputQueue,
+      outputQueue
+    );
+    this.writer = new Writer(etlConfig.writerOpts, outputQueue);
+    this.jobComplete = new JobComplete(
+      etlConfig.jobCompleteOpts,
+      jobCompleteQueue
+    );
+  }
+
+  execute() {
+    if (process.env.TYPE === 'dispatcher') this.dispatcher.execute();
+    if (process.env.TYPE === 'processor') this.processor.execute();
+    if (process.env.TYPE === 'writer') this.writer.execute();
+    if (process.env.TYPE === 'jobComplete') this.jobComplete.execute();
+  }
+}
+```
 
 ## Use Cases
 

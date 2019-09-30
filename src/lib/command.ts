@@ -5,7 +5,7 @@ export interface Command<T> {
 export enum TextReplacerType {
   Exact,
   Word,
-  Special
+  Special,
 }
 
 export interface Dictionary {
@@ -20,7 +20,7 @@ export interface DictionaryEntry {
 
 export enum MatchingAlgo {
   LEVENSHTEIN,
-  JARO_WRINKLER
+  JARO_WRINKLER,
 }
 
 export interface GeocodeOpts {
@@ -31,7 +31,7 @@ export interface GeocodeOpts {
 export class Geocode<T> implements Command<T> {
   opts: GeocodeOpts;
   execute(data: T): T {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
 }
 
@@ -39,34 +39,34 @@ export abstract class Standardize<T> implements Command<T> {
   protected dictionary: Dictionary;
   abstract getDictionaryName(): string;
   getDictionary(): Dictionary {
-    throw new Error("Not Implemented");
+    throw new Error('Not Implemented');
   }
   execute(data: T): T {
-    throw new Error("Not Implemented");
+    throw new Error('Not Implemented');
   }
 }
 
 export class StandardizeCompany extends Standardize<T> {
   getDictionaryName(): string {
-    return "dictionary_company";
+    return 'dictionary_company';
   }
 }
 
 export class StandardizeAddressCity extends Standardize<T> {
   getDictionaryName(): string {
-    return "dictionary_address_city";
+    return 'dictionary_address_city';
   }
 }
 
 export enum LookupType {
   MATCH,
   TERM,
-  MATCH_PHRASE
+  MATCH_PHRASE,
 }
 
 export enum OperationType {
   OR,
-  AND
+  AND,
 }
 
 export interface KeyValue {
@@ -86,7 +86,7 @@ export abstract class Lookup<T> implements Command<T> {
   abstract _setLookupOpts(data: T): LookupOpts;
   abstract _parseResult(result: object[]): T;
   _lookup(opts: LookupOpts): object[] {
-    throw new Error("Not Imeplemented");
+    throw new Error('Not Imeplemented');
   }
   execute(data: T): T {
     const opts = this._setLookupOpts(data);
@@ -100,44 +100,33 @@ export class HalalCompanyLookup<T> extends Lookup<T> {
     super();
   }
   _parseResult(result: object[]): T {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
 
   _setLookupOpts(data: T): LookupOpts {
     return {
       type: LookupType.MATCH,
       operation: OperationType.AND,
-      index: "lookup_halal_company",
+      index: 'lookup_halal_company',
       queries: [
         {
-          key: "company_name",
-          value: data[this.nameField]
+          key: 'company_name',
+          value: data[this.nameField],
         },
         {
-          key: "brn",
-          value: data[this.brnField]
-        }
-      ]
+          key: 'brn',
+          value: data[this.brnField],
+        },
+      ],
     };
   }
 }
 
 export class AgentLookup<T> extends Lookup<T> {
   _setLookupOpts(data: T): LookupOpts {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
   _parseResult(result: object[]): T {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
 }
-
-const data = tradeRecords[0];
-
-// const halalLookup = new HalalCompanyLookup<Trade>(
-//   'business_name',
-//   'business_code'
-// );
-// const result = halalLookup.execute(data);
-
-// const geocodeTrade = new Geocode<Trade>();
-// const result = geocodeTrade.execute(data);
