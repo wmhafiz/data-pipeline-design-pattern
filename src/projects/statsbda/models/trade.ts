@@ -1,16 +1,16 @@
 import {
-  Max,
-  MinLength,
-  MaxLength,
-  IsString,
   IsAlphanumeric,
   IsNotEmpty,
-  IsUppercase,
   IsOptional,
   IsPhoneNumber,
   IsPositive,
+  IsString,
+  IsUppercase,
+  Max,
+  MaxDate,
+  MaxLength,
   MinDate,
-  MaxDate
+  MinLength
 } from "class-validator";
 
 export class Trade {

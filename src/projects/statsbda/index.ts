@@ -1,184 +1,184 @@
-import { EtlConfiguration } from '../../lib/factory';
-import { Trade } from './models/trade';
-import { Etl } from '../../lib/etl';
+import { Etl } from "../../lib/etl";
+import { EtlConfiguration } from "../../lib/factory";
+import { Trade } from "./models/trade";
 
 const tradeRecord: Trade = {
   id: 1,
-  name: 'Telekom Malaysia Berhad',
-  nameStd: 'Telekom Malaysia Bhd',
-  brn: 'TM123',
-  telNo: '0139485675',
-  faxNo: '03223456',
+  name: "Telekom Malaysia Berhad",
+  nameStd: "Telekom Malaysia Bhd",
+  brn: "TM123",
+  telNo: "0139485675",
+  faxNo: "03223456",
   tradeValue: 100000,
   tradeDate: new Date(2015, 2, 13),
-  coord: '103.1, 3.13',
-  address: 'Bangsar',
+  coord: "103.1, 3.13",
+  address: "Bangsar"
 };
 
 const msbrJob: EtlConfiguration = {
   id: 1,
-  title: 'msbr job',
-  description: 'harmonize, SSM lookup & geocode msbr records',
+  title: "msbr job",
+  description: "harmonize, SSM lookup & geocode msbr records",
   queueOpts: {
-    type: 'bull',
+    type: "bull",
     opts: {
       removeOnComplete: true,
       attempts: 20,
       backoff: {
-        type: 'exponential',
-        delay: 10,
-      },
-    },
+        type: "exponential",
+        delay: 10
+      }
+    }
   },
   readerOpts: {
-    type: 'typeorm',
+    type: "typeorm",
     opts: {
-      dbType: 'postgres',
-      host: 'localhost',
-      database: 'statsbda',
-      username: 'postgres',
-      password: 'tmgds20s',
+      dbType: "postgres",
+      host: "localhost",
+      database: "statsbda",
+      username: "postgres",
+      password: "tmgds20s",
       port: 4567,
-      table: 'tec_msbr_<mothYear:mmyyyy>',
-    },
+      table: "tec_msbr_<mothYear:mmyyyy>"
+    }
   },
   processorOpts: [
     {
-      title: 'Remove Invalid Characters',
-      cmd: 'remove/invalid',
+      title: "Remove Invalid Characters",
+      cmd: "remove/invalid",
       opts: {
-        src: 'buss_name',
-        dest: 'buss_name_cln',
-      },
+        src: "buss_name",
+        dest: "buss_name_cln"
+      }
     },
     {
-      title: 'Standardize Company Names',
-      cmd: 'company/std',
+      title: "Standardize Company Names",
+      cmd: "company/std",
       opts: {
-        src: 'buss_name',
-        dest: 'buss_name_std',
-      },
+        src: "buss_name",
+        dest: "buss_name_std"
+      }
     },
     {
-      title: 'Remove Company Generics',
-      cmd: 'company/generic',
+      title: "Remove Company Generics",
+      cmd: "company/generic",
       opts: {
-        src: 'buss_name',
-        dest: 'buss_name_nogeneric',
-      },
+        src: "buss_name",
+        dest: "buss_name_nogeneric"
+      }
     },
     {
-      title: 'Halal Company Lookup',
-      cmd: 'lookup/company',
+      title: "Halal Company Lookup",
+      cmd: "lookup/company",
       opts: {
-        nameField: 'business_name',
-        brnField: 'business_code',
-      },
+        nameField: "business_name",
+        brnField: "business_code"
+      }
     },
     {
-      title: 'Halal Lookup',
-      cmd: 'lookup',
+      title: "Halal Lookup",
+      cmd: "lookup",
       opts: {
-        type: 'match',
-        operation: 'OR',
-        index: 'lookup_halal_company',
+        type: "match",
+        operation: "OR",
+        index: "lookup_halal_company",
         queries: [
           {
-            src: 'company_name',
-            dest: 'name',
+            src: "company_name",
+            dest: "name"
           },
           {
-            src: 'business_reg_no',
-            dest: 'brn',
-          },
+            src: "business_reg_no",
+            dest: "brn"
+          }
         ],
-        result: 'result.length > 0',
-      },
-    },
+        result: "result.length > 0"
+      }
+    }
   ],
   writerOpts: [
     {
-      title: 'Write back to the same DB',
-      cmd: 'DBWriter',
+      title: "Write back to the same DB",
+      cmd: "DBWriter",
       opts: {
-        index: 'tec_msbr_<month:MMyyyy>',
+        index: "tec_msbr_<month:MMyyyy>",
         createTable: true,
         autoDrop: true,
         truncate: true,
-        dbType: 'postgres',
-        host: 'localhost',
-        database: 'statsbda',
-        username: 'postgres',
-        password: 'tmgds20s',
-        port: 4567,
-      },
+        dbType: "postgres",
+        host: "localhost",
+        database: "statsbda",
+        username: "postgres",
+        password: "tmgds20s",
+        port: 4567
+      }
     },
     {
-      title: 'Index into the search engine',
-      cmd: 'ESWriter',
+      title: "Index into the search engine",
+      cmd: "ESWriter",
       opts: {
-        index: 'tec_msbr_<month:MMyyyy>',
+        index: "tec_msbr_<month:MMyyyy>",
         deleteIndex: true,
         createMapper: true,
-        host: 'localhost',
-        username: 'postgres',
-        password: 'tmgds20s',
-      },
-    },
+        host: "localhost",
+        username: "postgres",
+        password: "tmgds20s"
+      }
+    }
   ],
   jobCompleteOpts: [
     {
-      title: 'Two Way Traders',
-      cmd: 'aggregate',
+      title: "Two Way Traders",
+      cmd: "aggregate",
       opts: {
-        fields: ['trade_type'],
-        index: 'tec_msbr_<monthYear: MMyyyy>',
-        result: 'result.length === 1',
-      },
+        fields: ["trade_type"],
+        index: "tec_msbr_<monthYear: MMyyyy>",
+        result: "result.length === 1"
+      }
     },
     {
-      title: 'Agent Flag',
-      cmd: 'lookup',
+      title: "Agent Flag",
+      cmd: "lookup",
       opts: {
-        type: 'match',
-        operation: 'OR',
-        index: 'lookup_agent',
+        type: "match",
+        operation: "OR",
+        index: "lookup_agent",
         queries: [
           {
-            src: 'company_name',
-            dest: 'name',
+            src: "company_name",
+            dest: "name"
           },
           {
-            src: 'business_reg_no',
-            dest: 'brn',
-          },
+            src: "business_reg_no",
+            dest: "brn"
+          }
         ],
-        result: 'result.length > 1',
-      },
+        result: "result.length > 1"
+      }
     },
     {
-      title: 'Generate Data Quality Reports',
-      cmd: 'DataQualityGenerator',
+      title: "Generate Data Quality Reports",
+      cmd: "DataQualityGenerator",
       opts: {
-        jobId: 'this.id',
-      },
+        jobId: "this.id"
+      }
     },
     {
-      title: 'Generate Control Figure Reports',
-      cmd: 'ControlFigureGenerator',
+      title: "Generate Control Figure Reports",
+      cmd: "ControlFigureGenerator",
       opts: {
-        jobId: 'this.id',
-      },
+        jobId: "this.id"
+      }
     },
     {
-      title: 'Send Email',
-      cmd: 'EmailSender',
+      title: "Send Email",
+      cmd: "EmailSender",
       opts: {
-        subject: 'MSBR Job Completed at <now:dd/MM/yyyy:mm:ss>',
-        body: '',
-      },
-    },
-  ],
+        subject: "MSBR Job Completed at <now:dd/MM/yyyy:mm:ss>",
+        body: ""
+      }
+    }
+  ]
 };
 
 const etl = new Etl<Trade>(msbrJob);

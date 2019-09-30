@@ -14,7 +14,7 @@ Reader is used by Dispatcher worker to get Raw data into the queue.
 
 Reader interface has a single Read method that will return a Readstream.
 
-``` typescript
+```typescript
 export interface Reader {
   read(): ReadStream;
 }
@@ -30,7 +30,7 @@ Command is used by Processor & Writer to perform data transformation & data load
 
 Command interface has a single `execute` method that will take a generic type instace and return the back type instace
 
-``` typescript
+```typescript
 export interface Command<T> {
   execute(data: T): T;
 }
@@ -64,7 +64,7 @@ Read data from a data source and publish it into Raw Queue.
 
 Dispatcher receive a ReaderOpts.
 
-``` typescript
+```typescript
 export interface ReaderOpts {
   type: string;
   opts: any;
@@ -79,7 +79,7 @@ export interface ReaderOpts {
 
 Processor, Writer & Job Complete all receive a list of CommandOpts
 
-``` typescript
+```typescript
 export interface CommandOpts {
   title: string;
   cmd: string;
@@ -89,15 +89,15 @@ export interface CommandOpts {
 
 Worker Snippets:
 
-``` typescript
-import { Queue } from './queue';
+```typescript
+import { Queue } from "./queue";
 import {
   ReaderOpts,
   ReaderFactory,
   CommandOpts,
   CommandsFactory,
-  HooksFactory,
-} from './factory';
+  HooksFactory
+} from "./factory";
 
 export class Dispatcher<T> {
   protected readerOpts: ReaderOpts;
@@ -115,10 +115,10 @@ export class Dispatcher<T> {
   }
 
   execute(): void {
-    this.inputQueue.on('data', readerOpts => {
+    this.inputQueue.on("data", readerOpts => {
       const reader = ReaderFactory.createReader(readerOpts);
       const readStream = reader.read();
-      readStream.on('data', data => {
+      readStream.on("data", data => {
         this.rawQueue.add(data);
       });
     });
@@ -142,13 +142,13 @@ export class Processor<T> {
 
   execute(): void {
     const commands = CommandsFactory.createCommands(this.commandsOptions);
-    this.inputQueue.on('data', data => {
+    this.inputQueue.on("data", data => {
       let output = data;
       commands.forEach(command => {
         const result = command.execute(data);
         output = {
           ...output,
-          ...result,
+          ...result
         };
       });
       this.outputQueue.add(output);
@@ -167,13 +167,13 @@ export class Writer<T> {
 
   execute(): void {
     const commands = CommandsFactory.createCommands(this.commandsOptions);
-    this.outputQueue.on('data', (data: T) => {
+    this.outputQueue.on("data", (data: T) => {
       let output = data;
       commands.forEach(async command => {
         const result = await command.execute(data);
         output = {
           ...data,
-          ...result,
+          ...result
         };
       });
       this.outputQueue.add(output);
@@ -191,7 +191,7 @@ export class JobComplete<T> {
   }
 
   execute(): void {
-    this.jobCompleteQueue.on('data', data => {
+    this.jobCompleteQueue.on("data", data => {
       const hooks = HooksFactory.createHooks(this.hooksOpts);
       hooks.forEach(hook => {
         hook.execute(data);
@@ -199,7 +199,6 @@ export class JobComplete<T> {
     });
   }
 }
-
 ```
 
 ## ETL
@@ -233,9 +232,9 @@ ETL class tie all the interfaces together and spawn the correct worker type base
 
 ![ETL Class Diagram](images/etl-class-diagram.svg)
 
-``` typescript
-import { EtlConfiguration, QueueFactory } from './factory';
-import { Dispatcher, Processor, Writer, JobComplete } from './worker';
+```typescript
+import { EtlConfiguration, QueueFactory } from "./factory";
+import { Dispatcher, Processor, Writer, JobComplete } from "./worker";
 
 export class Etl<T> {
   protected dispatcher: Dispatcher<T>;
@@ -244,11 +243,11 @@ export class Etl<T> {
   protected jobComplete: JobComplete<T>;
 
   constructor(etlConfig: EtlConfiguration) {
-    const inputQueue = QueueFactory.createQueue('input', etlConfig.queueOpts);
-    const rawQueue = QueueFactory.createQueue('raw', etlConfig.queueOpts);
-    const outputQueue = QueueFactory.createQueue('output', etlConfig.queueOpts);
+    const inputQueue = QueueFactory.createQueue("input", etlConfig.queueOpts);
+    const rawQueue = QueueFactory.createQueue("raw", etlConfig.queueOpts);
+    const outputQueue = QueueFactory.createQueue("output", etlConfig.queueOpts);
     const jobCompleteQueue = QueueFactory.createQueue(
-      'complete',
+      "complete",
       etlConfig.queueOpts
     );
 
@@ -270,10 +269,10 @@ export class Etl<T> {
   }
 
   execute() {
-    if (process.env.TYPE === 'dispatcher') this.dispatcher.execute();
-    if (process.env.TYPE === 'processor') this.processor.execute();
-    if (process.env.TYPE === 'writer') this.writer.execute();
-    if (process.env.TYPE === 'jobComplete') this.jobComplete.execute();
+    if (process.env.TYPE === "dispatcher") this.dispatcher.execute();
+    if (process.env.TYPE === "processor") this.processor.execute();
+    if (process.env.TYPE === "writer") this.writer.execute();
+    if (process.env.TYPE === "jobComplete") this.jobComplete.execute();
   }
 }
 ```
@@ -286,148 +285,186 @@ export class Etl<T> {
 
 Example job configuration:
 
-``` typescript
-const msbrJob: JobConfiguration = {
+```typescript
+const tradeRecord: Trade = {
   id: 1,
-  title: 'msbr job',
-  description: 'harmonize, SSM lookup & geocode msbr records',
-  input: {
-    dbType: 'postgres',
-    host: 'localhost',
-    database: 'statsbda',
-    username: 'postgres',
-    password: 'tmgds20s',
-    port: 4567,
-    table: 'tec_msbr_<mothYear:mmyyyy>'
+  name: "Telekom Malaysia Berhad",
+  nameStd: "Telekom Malaysia Bhd",
+  brn: "TM123",
+  telNo: "0139485675",
+  faxNo: "03223456",
+  tradeValue: 100000,
+  tradeDate: new Date(2015, 2, 13),
+  coord: "103.1, 3.13",
+  address: "Bangsar"
+};
+
+const msbrJob: EtlConfiguration = {
+  id: 1,
+  title: "msbr job",
+  description: "harmonize, SSM lookup & geocode msbr records",
+  queueOpts: {
+    type: "bull",
+    opts: {
+      removeOnComplete: true,
+      attempts: 20,
+      backoff: {
+        type: "exponential",
+        delay: 10
+      }
+    }
   },
-  processing: [
+  readerOpts: {
+    type: "typeorm",
+    opts: {
+      dbType: "postgres",
+      host: "localhost",
+      database: "statsbda",
+      username: "postgres",
+      password: "tmgds20s",
+      port: 4567,
+      table: "tec_msbr_<mothYear:mmyyyy>"
+    }
+  },
+  processorOpts: [
     {
-      title: 'Remove Invalid Characters',
-      cmd: 'remove/invalid',
+      title: "Remove Invalid Characters",
+      cmd: "remove/invalid",
       opts: {
-        src: 'buss_name',
-        dest: 'buss_name_cln'
+        src: "buss_name",
+        dest: "buss_name_cln"
       }
     },
     {
-      title: 'Standardize Company Names',
-      cmd: 'company/std',
+      title: "Standardize Company Names",
+      cmd: "company/std",
       opts: {
-        src: 'buss_name',
-        dest: 'buss_name_std'
+        src: "buss_name",
+        dest: "buss_name_std"
       }
     },
     {
-      title: 'Remove Company Generics',
-      cmd: 'company/generic',
+      title: "Remove Company Generics",
+      cmd: "company/generic",
       opts: {
-        src: 'buss_name',
-        dest: 'buss_name_nogeneric'
+        src: "buss_name",
+        dest: "buss_name_nogeneric"
       }
     },
     {
-      title: 'Halal Lookup',
-      cmd: 'lookup',
+      title: "Halal Company Lookup",
+      cmd: "lookup/company",
       opts: {
-        type: 'match', // other options: 'term', 'matchPhrase'
-        operation: 'OR', // or 'AND'
-        index: 'lookup_halal_company',
+        nameField: "business_name",
+        brnField: "business_code"
+      }
+    },
+    {
+      title: "Halal Lookup",
+      cmd: "lookup",
+      opts: {
+        type: "match",
+        operation: "OR",
+        index: "lookup_halal_company",
         queries: [
           {
-            src: 'company_name',
-            dest: 'name'
+            src: "company_name",
+            dest: "name"
           },
           {
-            src: 'business_reg_no',
-            dest: 'brn'
+            src: "business_reg_no",
+            dest: "brn"
           }
         ],
-        result: 'result.length > 0'
+        result: "result.length > 0"
       }
     }
   ],
-  output: [
+  writerOpts: [
     {
-      title: 'Write back to the same DB',
-      cmd: 'DBWriter',
+      title: "Write back to the same DB",
+      cmd: "DBWriter",
       opts: {
-        index: 'tec_msbr_<month:MMyyyy>',
+        index: "tec_msbr_<month:MMyyyy>",
         createTable: true,
         autoDrop: true,
         truncate: true,
-        dbType: 'postgres',
-        host: 'localhost',
-        database: 'statsbda',
-        username: 'postgres',
-        password: 'tmgds20s',
+        dbType: "postgres",
+        host: "localhost",
+        database: "statsbda",
+        username: "postgres",
+        password: "tmgds20s",
         port: 4567
       }
     },
     {
-      title: 'Index into the search engine',
-      cmd: 'ESWriter',
+      title: "Index into the search engine",
+      cmd: "ESWriter",
       opts: {
-        index: 'tec_msbr_<month:MMyyyy>',
+        index: "tec_msbr_<month:MMyyyy>",
         deleteIndex: true,
         createMapper: true,
-        host: 'localhost',
-        username: 'postgres',
-        password: 'tmgds20s'
+        host: "localhost",
+        username: "postgres",
+        password: "tmgds20s"
       }
     }
   ],
-  jobComplete: [
+  jobCompleteOpts: [
     {
-      title: 'Two Way Traders',
-      cmd: 'aggregate',
+      title: "Two Way Traders",
+      cmd: "aggregate",
       opts: {
-        fields: ['trade_type'],
-        index: 'tec_msbr_<monthYear: MMyyyy>',
-        result: 'result.length === 1'
+        fields: ["trade_type"],
+        index: "tec_msbr_<monthYear: MMyyyy>",
+        result: "result.length === 1"
       }
     },
     {
-      title: 'Agent Flag',
-      cmd: 'lookup',
+      title: "Agent Flag",
+      cmd: "lookup",
       opts: {
-        type: 'match',
-        operation: 'OR',
-        index: 'lookup_agent',
+        type: "match",
+        operation: "OR",
+        index: "lookup_agent",
         queries: [
           {
-            src: 'company_name',
-            dest: 'name'
+            src: "company_name",
+            dest: "name"
           },
           {
-            src: 'business_reg_no',
-            dest: 'brn'
+            src: "business_reg_no",
+            dest: "brn"
           }
         ],
-        result: 'result.length > 1'
+        result: "result.length > 1"
       }
     },
     {
-      title: 'Generate Data Quality Reports',
-      cmd: 'DataQualityGenerator',
+      title: "Generate Data Quality Reports",
+      cmd: "DataQualityGenerator",
       opts: {
-        jobId: 'this.id'
+        jobId: "this.id"
       }
     },
     {
-      title: 'Generate Control Figure Reports',
-      cmd: 'ControlFigureGenerator',
+      title: "Generate Control Figure Reports",
+      cmd: "ControlFigureGenerator",
       opts: {
-        jobId: 'this.id'
+        jobId: "this.id"
       }
     },
     {
-      title: 'Send Email',
-      cmd: 'EmailSender',
+      title: "Send Email",
+      cmd: "EmailSender",
       opts: {
-        subject: 'MSBR Job Completed at <now:dd/MM/yyyy:mm:ss>',
-        body: ''
+        subject: "MSBR Job Completed at <now:dd/MM/yyyy:mm:ss>",
+        body: ""
       }
     }
   ]
 };
+
+const etl = new Etl<Trade>(msbrJob);
+etl.execute();
 ```
