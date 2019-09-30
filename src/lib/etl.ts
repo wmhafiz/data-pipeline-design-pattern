@@ -1,5 +1,5 @@
-import { EtlConfiguration, QueueFactory } from './factory';
-import { Dispatcher, Processor, Writer, JobComplete } from './worker';
+import { EtlConfiguration, QueueFactory } from "./factory";
+import { Dispatcher, JobComplete, Processor, Writer } from "./worker";
 
 export class Etl<T> {
   protected dispatcher: Dispatcher<T>;
@@ -8,11 +8,11 @@ export class Etl<T> {
   protected jobComplete: JobComplete<T>;
 
   constructor(etlConfig: EtlConfiguration) {
-    const inputQueue = QueueFactory.createQueue('input', etlConfig.queueOpts);
-    const rawQueue = QueueFactory.createQueue('raw', etlConfig.queueOpts);
-    const outputQueue = QueueFactory.createQueue('output', etlConfig.queueOpts);
+    const inputQueue = QueueFactory.createQueue("input", etlConfig.queueOpts);
+    const rawQueue = QueueFactory.createQueue("raw", etlConfig.queueOpts);
+    const outputQueue = QueueFactory.createQueue("output", etlConfig.queueOpts);
     const jobCompleteQueue = QueueFactory.createQueue(
-      'complete',
+      "complete",
       etlConfig.queueOpts
     );
 
@@ -34,9 +34,9 @@ export class Etl<T> {
   }
 
   execute(): void {
-    if (process.env.TYPE === 'dispatcher') this.dispatcher.execute();
-    if (process.env.TYPE === 'processor') this.processor.execute();
-    if (process.env.TYPE === 'writer') this.writer.execute();
-    if (process.env.TYPE === 'jobComplete') this.jobComplete.execute();
+    if (process.env.TYPE === "dispatcher") this.dispatcher.execute();
+    if (process.env.TYPE === "processor") this.processor.execute();
+    if (process.env.TYPE === "writer") this.writer.execute();
+    if (process.env.TYPE === "jobComplete") this.jobComplete.execute();
   }
 }

@@ -1,11 +1,11 @@
-import { Queue } from './queue';
 import {
-  ReaderOpts,
-  ReaderFactory,
   CommandOpts,
   CommandsFactory,
   HooksFactory,
-} from './factory';
+  ReaderFactory,
+  ReaderOpts
+} from "./factory";
+import { Queue } from "./queue";
 
 export class Dispatcher<T> {
   protected readerOpts: ReaderOpts;
@@ -23,10 +23,10 @@ export class Dispatcher<T> {
   }
 
   execute(): void {
-    this.inputQueue.on('data', readerOpts => {
+    this.inputQueue.on("data", readerOpts => {
       const reader = ReaderFactory.createReader(readerOpts);
       const readStream = reader.read();
-      readStream.on('data', data => {
+      readStream.on("data", data => {
         this.rawQueue.add(data);
       });
     });
@@ -50,13 +50,13 @@ export class Processor<T> {
 
   execute(): void {
     const commands = CommandsFactory.createCommands(this.commandsOptions);
-    this.inputQueue.on('data', data => {
+    this.inputQueue.on("data", data => {
       let output = data;
       commands.forEach(command => {
         const result = command.execute(data);
         output = {
           ...output,
-          ...result,
+          ...result
         };
       });
       this.outputQueue.add(output);
@@ -75,13 +75,13 @@ export class Writer<T> {
 
   execute(): void {
     const commands = CommandsFactory.createCommands(this.commandsOptions);
-    this.outputQueue.on('data', (data: T) => {
+    this.outputQueue.on("data", (data: T) => {
       let output = data;
       commands.forEach(async command => {
         const result = await command.execute(data);
         output = {
           ...data,
-          ...result,
+          ...result
         };
       });
       this.outputQueue.add(output);
@@ -99,7 +99,7 @@ export class JobComplete<T> {
   }
 
   execute(): void {
-    this.jobCompleteQueue.on('data', data => {
+    this.jobCompleteQueue.on("data", data => {
       const hooks = HooksFactory.createHooks(this.hooksOpts);
       hooks.forEach(hook => {
         hook.execute(data);

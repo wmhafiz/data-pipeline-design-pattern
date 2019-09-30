@@ -1,6 +1,6 @@
-import { Reader } from './reader';
-import { Command } from './command';
-import { Queue } from './queue';
+import { Command } from "./command";
+import { Queue } from "./queue";
+import { Reader } from "./reader";
 
 export interface ReaderOpts {
   type: string;
@@ -9,7 +9,7 @@ export interface ReaderOpts {
 
 export class ReaderFactory {
   static createReader(opts: ReaderOpts): Reader {
-    throw new Error('Not implemented');
+    throw new Error("Not implemented");
   }
 }
 
@@ -21,13 +21,13 @@ export interface CommandOpts {
 
 export class CommandsFactory<T> {
   static createCommands(opts: Array<CommandOpts>): Array<Command<T>> {
-    throw new Error('Not Implemented');
+    throw new Error("Not Implemented");
   }
 }
 
 export class HooksFactory<T> {
   static createHooks(opts: Array<CommandOpts>): Array<Command<T>> {
-    throw new Error('Not Implemented');
+    throw new Error("Not Implemented");
   }
 }
 
@@ -38,7 +38,7 @@ interface QueueOpts {
 
 export class QueueFactory<T> {
   static createQueue(name: string, opts: QueueOpts): Queue<T> {
-    throw new Error('Not Implemented');
+    throw new Error("Not Implemented");
   }
 }
 
