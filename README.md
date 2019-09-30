@@ -6,9 +6,11 @@ Reader is used by Dispatcher worker to get Raw data into the queue.
 
 Reader interface has a single Read method that will return a Readstream.
 
-![Reader interface](images/reader-interface.png | width=100)
-
-![](https://gyazo.com/eb5c5741b6a9a16c692170a41a49c858.png =250x250)
+``` typescript
+export interface Reader {
+  read(): ReadStream;
+}
+```
 
 Concrete classes include: `FileReader`, `RdbmsReader`, `EsReader`
 
@@ -20,7 +22,11 @@ Command is used by Processor & Writer to perform data transformation & data load
 
 Command interface has a single `execute` method that will take a generic type instace and return the back type instace
 
-![Command interface](images/command-interface.png)
+``` typescript
+export interface Command<T> {
+  execute(data: T): T;
+}
+```
 
 Concrete classes include: `Geocode`, `StandardizeCompanyName`, `HalalCompanyLookup`, `StandardizeAddressCity`
 
@@ -50,7 +56,6 @@ There are 4 type of workers:
 - JobComplete: subscribe to Job Complete Queue and perform custom business logics
 
 ![Worker snippets](images/worker-snippet.png)
-
 
 Example hooks:
 
