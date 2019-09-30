@@ -33,7 +33,7 @@ export class Etl<T> {
     );
   }
 
-  execute() {
+  execute(): void {
     if (process.env.TYPE === 'dispatcher') this.dispatcher.execute();
     if (process.env.TYPE === 'processor') this.processor.execute();
     if (process.env.TYPE === 'writer') this.writer.execute();

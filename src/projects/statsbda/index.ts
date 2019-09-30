@@ -1,5 +1,6 @@
 import { EtlConfiguration } from '../../lib/factory';
 import { Trade } from './models/trade';
+import { Etl } from '../../lib/etl';
 
 const tradeRecord: Trade = {
   id: 1,
@@ -67,11 +68,19 @@ const msbrJob: EtlConfiguration = {
       },
     },
     {
+      title: 'Halal Company Lookup',
+      cmd: 'lookup/company',
+      opts: {
+        nameField: 'business_name',
+        brnField: 'business_code',
+      },
+    },
+    {
       title: 'Halal Lookup',
       cmd: 'lookup',
       opts: {
-        type: 'match', // other options: 'term', 'matchPhrase'
-        operation: 'OR', // or 'AND'
+        type: 'match',
+        operation: 'OR',
         index: 'lookup_halal_company',
         queries: [
           {
@@ -171,3 +180,6 @@ const msbrJob: EtlConfiguration = {
     },
   ],
 };
+
+const etl = new Etl<Trade>(msbrJob);
+etl.execute();

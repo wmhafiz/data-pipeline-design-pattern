@@ -1,0 +1,102 @@
+version: '3.1'
+services:
+  elasticsearch:
+    build:
+      context: docker/elasticsearch/
+      args:
+        ELK_VERSION: 7.2.0
+    volumes:
+      - ./docker/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+    environment:
+      ES_JAVA_OPTS: '-Xmx256m -Xms256m'
+      ELASTIC_PASSWORD: tmgds20s
+
+  kibana:
+    build:
+      context: docker/kibana/
+      args:
+        ELK_VERSION: 7.2.0
+    volumes:
+      - ./docker/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - '5601:5601'
+    depends_on:
+      - elasticsearch
+
+  db:
+    image: postgres:10-alpine
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: tmgds20s
+      POSTGRES_DB: statsbda
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - 8080:80
+    volumes:
+      - pgadmindata:/var/lib/pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: fizyboy@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: tmgds20s
+
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - redis:/data
+
+  arena:
+    image: mixmaxhq/arena
+    ports:
+      - 4567:4567
+    depends_on:
+      - redis
+    volumes:
+      - ./docker/arena/index.json:/opt/arena/src/server/config/index.json
+
+  dispatcher:
+    build: .
+    depends_on:
+      - redis
+    environment:
+      TYPE: dispatcher
+
+  processor:
+    build: .
+    depends_on:
+      - redis
+    environment:
+      TYPE: processor
+
+  writer:
+    build: .
+    depends_on:
+      - redis
+    environment:
+      TYPE: writer
+
+  jobComplete:
+    build: .
+    depends_on:
+      - redis
+    environment:
+      TYPE: jobComplete
+
+volumes:
+  pgdata:
+  pgadmindata:
+  redis:
