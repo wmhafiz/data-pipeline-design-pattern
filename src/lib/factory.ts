@@ -1,7 +1,44 @@
-import { Queue } from 'bull';
-import { ReaderOpts, CommandsOpts, JobCompleteHook } from './worker';
+import { Reader } from "./reader";
+import { Command } from "./command";
+import { Queue } from "./queue";
 
-interface EtlOptions {
+export interface ReaderOpts {
+  type: string;
+  opts: any;
+}
+
+export class ReaderFactory {
+  static createReader(opts: ReaderOpts): Reader {
+    throw new Error("Not implemented");
+  }
+}
+
+export interface CommandsOpts {
+  commands: Array<CommandOpts>;
+}
+
+export interface CommandOpts {
+  name: string;
+  opts: any;
+}
+
+export class CommandsFactory<T> {
+  static createCommands(opts: CommandsOpts): Array<Command<T>> {
+    throw new Error("Not Implemented");
+  }
+}
+
+export interface HooksOpts {
+  hooks: Array<CommandOpts>;
+}
+
+export class HooksFactory<T> {
+  static createHooks(opts: HooksOpts): Array<Command<T>> {
+    throw new Error("Not Implemented");
+  }
+}
+
+interface EtlOpts {
   /**
    * A boolean which, if true, removes the job when it successfully completes.
    * Default behavior is to keep the job in the completed set.
@@ -54,64 +91,25 @@ export interface Backoff {
   delay: number;
 }
 
+interface QueueOpts {
+  type: string;
+  opts: any;
+}
+
 export interface EtlConfiguration {
   id: number;
   title: string;
   description: string;
-  queue: Queue<T>;
-  opts: EtlOptions;
+  queueOpts: QueueOpts;
+  opts: EtlOpts;
   input: ReaderOpts;
   output: CommandsOpts;
   processing: CommandsOpts;
-  jobComplete: JobCompleteHook[];
+  jobComplete: HooksOpts;
 }
 
-interface Trade {
-  id: number;
-  name: string;
-  brn: string;
-  telNo: string;
-  faxNo: string;
-  coord: string;
-  address: string;
-}
-
-const tradeRecords: Trade[] = [
-  {
-    id: 1,
-    name: 'Telekom Malaysia Berhad',
-    brn: 'TM123',
-    telNo: '0139485675',
-    faxNo: '03223456',
-    coord: '103.1, 3.13',
-    address: 'Bangsar',
-  },
-  {
-    id: 2,
-    name: 'Celcom Sdn Berhad',
-    brn: 'TM123',
-    telNo: '0139485675',
-    faxNo: '03223456',
-    coord: '103.1, 3.13',
-    address: 'KL',
-  },
-  {
-    id: 3,
-    name: 'Maxis Sdn Berhad',
-    brn: 'TM123',
-    telNo: '0139485675',
-    faxNo: '03223456',
-    coord: '103.1, 3.13',
-    address: 'Damansara',
-  },
-];
-
-interface Msbr {
-  ID: number;
-  name: string;
-  brn: string;
-  telNo: string;
-  faxNo: string;
-  coord: string;
-  address: string;
+export class QueueFactory<T> {
+  static createQueue(name: string, opts: QueueOpts): Queue<T> {
+    throw new Error("Not Implemented");
+  }
 }
