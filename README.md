@@ -6,7 +6,9 @@ Reader is used by Dispatcher worker to get Raw data into the queue.
 
 Reader interface has a single Read method that will return a Readstream.
 
-![Reader interface](images/reader-interface.png)
+![Reader interface](images/reader-interface.png | width=100)
+
+![](https://gyazo.com/eb5c5741b6a9a16c692170a41a49c858.png =250x250)
 
 Concrete classes include: `FileReader`, `RdbmsReader`, `EsReader`
 
