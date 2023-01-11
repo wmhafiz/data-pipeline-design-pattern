@@ -15,7 +15,7 @@
   "dependencies": {
     "@types/bull": "3.10.3",
     "bull": "^3.11.0",
-    "class-validator": "0.10.1",
+    "class-validator": "0.14.0",
     "cross-env": "^6.0.0",
     "dotenv": "^8.1.0",
     "elasticsearch": "^16.4.0",
